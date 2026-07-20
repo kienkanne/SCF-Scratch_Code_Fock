@@ -1,72 +1,44 @@
-__pycache__
-# ==========================================
-# Dependencies & Package Managers
-# ==========================================
-node_modules/
-jspm_packages/
-web_modules/
-.pnp
-.pnp.js
+# Python
 
-# ==========================================
-# Environment Variables & Secrets (CRITICAL)
-# ==========================================
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
-*.pem
-*.key
-
-# ==========================================
-# Build Outputs & Distribution Folders
-# ==========================================
-dist/
-build/
-out/
-.next/
-.nuxt/
-.cache/
-.parcel-cache/
-
-# ==========================================
-# Python & Backend Outputs
-# ==========================================
-__pycache__/
+**pycache**/
 *.py[cod]
-*$py.class
-*.elc
-.venv/
+*.pyo
+*.so
+
+# Virtual environments
+
 venv/
-ENV/
+.env/
+.conda/
 env/
+ENV/
 
-# ==========================================
-# Logs and Diagnostics
-# ==========================================
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# Jupyter
 
-# ==========================================
-# IDEs and Editors
-# ==========================================
+.ipynb_checkpoints/
+
+# IDE / Editor
+
 .vscode/
-# Note: Keep .vscode/settings.json if sharing settings, otherwise ignore
 .idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 *.swp
+*.swo
 
-# ==========================================
+# Temporary
+
+tmp/
+temp/
+scratch/
+artifacts/
+*.tmp
+*log*
+
+# Build artifacts
+
+dist/
+*.egg-info/
+
 # Psi4 outputs
-# ==========================================
-*.clean
+
 *.dat
+*.clean

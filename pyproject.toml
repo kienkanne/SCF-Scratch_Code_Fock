@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scratch_code_fock"
+version = "0.1.0"
+
+[tool.setuptools.package-data]
+scratch_code_fock = ["**/*.txt", "**/*.com", "**/templates/*.py", "**/*.ipynb"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

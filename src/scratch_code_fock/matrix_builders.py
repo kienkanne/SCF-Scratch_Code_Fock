@@ -1,6 +1,6 @@
 import numpy as np
-from mol_basis_builder import ANGSTROM_TO_BOHR, ATOMIC_NUMBERS
-from mol_basis_builder import Molecule, Basis # For type hints only
+from scratch_code_fock.mol_basis_builder import ANGSTROM_TO_BOHR, ATOMIC_NUMBERS
+from scratch_code_fock.mol_basis_builder import Molecule, Basis # For type hints only
 
 
 def angular_combinations(n: int):
@@ -14,7 +14,7 @@ def angular_combinations(n: int):
 
 
 def build_S_T_V(mol: Molecule, basis: Basis):
-    from integral_solvers import get_overlap_integrals, get_kinetic_integrals, get_NAIs
+    from scratch_code_fock.integral_solvers import get_overlap_integrals, get_kinetic_integrals, get_NAIs
     n_ao = basis.nao
 
     S = np.zeros((n_ao,n_ao))
@@ -118,7 +118,7 @@ def build_S_T_V(mol: Molecule, basis: Basis):
 
 
 def build_ERI(mol: Molecule, basis: Basis):
-    from integral_solvers import get_ERIs
+    from scratch_code_fock.integral_solvers import get_ERIs
 
     n_ao = basis.nao
     ERI = np.zeros((n_ao,n_ao,n_ao,n_ao))
