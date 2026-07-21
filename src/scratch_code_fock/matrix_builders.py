@@ -74,9 +74,18 @@ def build_S_T_V(mol: Molecule, basis: Basis):
 
                     V_base = 2 * (zeta / np.pi)**0.5 * S_base
 
-                    # Calculates an additional layer for kinetic terms
                     SI = get_overlap_integrals(PA, PB, zeta, AMa, AMb)
                     TI = get_kinetic_integrals(PA, PB, expa, expb, AMa, AMb, SI)
+
+                    # Initiate the nulclear attraction integrals tensor
+                    VI = np.zeros((AMa + 1, AMa + 1, AMa + 1, AMb + 1, AMb + 1, AMb + 1, AMa + AMb + 1))
+
+                    # Loop over each nuclear center, summing all terms
+                    for atom, C in zip(mol.atoms, mol.coords * ANGSTROM_TO_BOHR):
+                        Z_C = ATOMIC_NUMBERS[atom.upper()]
+                        PC = P - C
+
+                        VI += get_NAIs(PA, PB, PC, zeta, AMa, AMb) * (-Z_C)
 
                     # 3rd loop: over the all angular combinations
                     for counta, a_com in enumerate(a_coms):
@@ -101,18 +110,10 @@ def build_S_T_V(mol: Molecule, basis: Basis):
                             T[a_idx + counta, b_idx + countb] += S_base \
                                                             * coefa * coefb \
                                                             * t_term
-                            
-                            for atom, C in zip(mol.atoms, mol.coords * ANGSTROM_TO_BOHR):
-                                Z = ATOMIC_NUMBERS[atom.upper()]
-                                PC = P - C
 
-                                VI = get_NAIs(PA, PB, PC, zeta, AMa, AMb)
-
-                                # Multiply by -Z_C, do not cube VI, and strictly query m=0
-                                V[a_idx + counta, b_idx + countb] += (-Z) * V_base \
-                                                                    * coefa \
-                                                                    * coefb \
-                                                                    * VI[ax, ay, az, bx, by, bz, 0]
+                            V[a_idx + counta, b_idx + countb] += V_base \
+                                                                * coefa * coefb \
+                                                                * VI[ax, ay, az, bx, by, bz, 0]
 
     return S, T, V                      
 

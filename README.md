@@ -41,15 +41,15 @@ I = build_ERI(mol, basis)
 E = roothan_solver(mol, S, T, V, I)
 ```
 
-See `full_pipeline.ipynb` for a worked example with validation against Psi4
+See [full_pipeline.py](full_pipeline.py) and [pipeline_output.txt](pipeline_output.txt) for a worked example with validation against Psi4
 reference matrices across STO-3G, 6-31G, 6-31G**, and cc-pVDZ.
 
 ## Files
 
 | File | Contents |
 |---|---|
-| `mol_basis_builder.py` | `Molecule` and `Basis`/`Shell` data structures; basis set loading via Basis Set Exchange |
-| `integral_solvers.py` | Obara-Saika recursions for S, T, nuclear attraction, and ERI primitive integrals |
-| `matrix_builders.py` | Shell-pair/quartet loops, symmetry exploitation, AO-basis matrix assembly |
-| `roothan_solver.py` | SCF loop: symmetric orthogonalization, Fock build, DIIS |
-| `full_pipeline.ipynb` | End-to-end run + validation against Psi4 |
+| [mol_basis_builder.py](src/scratch_code_fock/mol_basis_builder.py) | `Molecule` and `Basis`/`Shell` data structures; basis set loading via Basis Set Exchange |
+| [integral_solvers.py](src/scratch_code_fock/integral_solvers.py) | Obara-Saika recursions for S, T, nuclear attraction, and ERI primitive integrals |
+| [matrix_builders.py](src/scratch_code_fock/matrix_builders.py) | Shell-pair/quartet loops, symmetry exploitation, AO-basis matrix assembly |
+| [roothan_solver.py](src/scratch_code_fock/roothan_solver.py) | SCF loop: symmetric orthogonalization, Fock build, DIIS |
+| [full_pipeline.py](full_pipeline.py), [pipeline_output.txt](pipeline_output.txt) | End-to-end run + validation against Psi4 |

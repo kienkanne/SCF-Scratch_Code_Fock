@@ -1,0 +1,52 @@
+==============================
+Testing basis set sto-3g
+==============================
+My implementation runtime: 4.002951 seconds
+Psi4 runtime: 0.173075 seconds
+My SCF energy:   -112.3538011543945
+Psi4 SCF energy: -112.35380130332987
+Check Energy   | Allclose: True  | Max error: 1.489e-07 | RMS error: 1.489e-07
+Check Mulliken | Allclose: True  | Max error: 1.175e-07 | RMS error: 7.016e-08
+Check S        | Allclose: True  | Max error: 5.931e-08 | RMS error: 1.700e-08
+Check T        | Allclose: True  | Max error: 4.119e-06 | RMS error: 3.439e-07
+Check V        | Allclose: True  | Max error: 4.509e-06 | RMS error: 4.542e-07
+Check I        | Allclose: True  | Max error: 3.471e-07 | RMS error: 6.610e-09
+==============================
+Testing basis set 6-31g
+==============================
+My implementation runtime: 13.957974 seconds
+Psi4 runtime: 0.154621 seconds
+My SCF energy:   -113.80784752406073
+Psi4 SCF energy: -113.80784764864008
+Check Energy   | Allclose: True  | Max error: 1.246e-07 | RMS error: 1.246e-07
+Check Mulliken | Allclose: True  | Max error: 2.406e-07 | RMS error: 1.392e-07
+Check S        | Allclose: True  | Max error: 2.311e-07 | RMS error: 4.062e-08
+Check T        | Allclose: True  | Max error: 7.299e-06 | RMS error: 4.066e-07
+Check V        | Allclose: True  | Max error: 7.719e-06 | RMS error: 6.405e-07
+Check I        | Allclose: False | Max error: 3.591e-07 | RMS error: 1.104e-08
+==============================
+Testing basis set 6-31g**
+==============================
+My implementation runtime: 68.196149 seconds
+Psi4 runtime: 0.289124 seconds
+My SCF energy:   -113.8690053559351
+Psi4 SCF energy: -113.8690053959647
+Check Energy   | Allclose: True  | Max error: 4.003e-08 | RMS error: 4.003e-08
+Check Mulliken | Allclose: True  | Max error: 5.167e-07 | RMS error: 2.995e-07
+Check S        | Allclose: True  | Max error: 2.311e-07 | RMS error: 2.686e-08
+Check T        | Allclose: True  | Max error: 7.299e-06 | RMS error: 2.247e-07
+Check V        | Allclose: True  | Max error: 7.719e-06 | RMS error: 3.986e-07
+Check I        | Allclose: False | Max error: 3.591e-07 | RMS error: 5.749e-09
+==============================
+Testing basis set cc-pvdz
+==============================
+My implementation runtime: 696.266624 seconds
+Psi4 runtime: 0.442885 seconds
+My SCF energy:   -113.87679696901616
+Psi4 SCF energy: -113.8767969124259
+Check Energy   | Allclose: True  | Max error: 5.659e-08 | RMS error: 5.659e-08
+Check Mulliken | Allclose: True  | Max error: 3.139e-07 | RMS error: 1.815e-07
+Check S        | Allclose: False | Max error: 3.033e-01 | RMS error: 5.371e-02
+Check T        | Allclose: False | Max error: 7.925e+00 | RMS error: 3.897e-01
+Check V        | Allclose: False | Max error: 1.561e+01 | RMS error: 8.062e-01
+Check I        | Allclose: False | Max error: 1.125e+00 | RMS error: 8.290e-03
