@@ -1,4 +1,4 @@
-# DERIVATIONS.md
+# SUPPLEMENTS
 
 This is the mathematical supplements to the scratch-built RHF/SCF engine in this repository.
 Every section below corresponds to one function or class in the codebase
@@ -8,7 +8,7 @@ Every integral is evaluated via explicit Obara-Saika recursion in pure NumPy, wi
 
 ---
 
-## Gaussian normalization — `Shell.__init__` (`mol_basis_builder.py`)
+## 1. Gaussian normalization — `Shell.__init__` (`mol_basis_builder.py`)
 
 Every contracted Cartesian basis function is a normalized sum of primitives:
 
@@ -52,12 +52,11 @@ which reduces to $1/\sqrt{(2l-1)!!}$ for pure components but gives exactly $1$ f
 
 ---
 
-## Matrices construction, Roothaan-Hall equations, and symmetric orthogonalization — `roothan_solver` (`roothan_solver.py`)
+## 2. Matrices construction, Roothaan-Hall equations, and symmetric orthogonalization — `roothan_solver` (`roothan_solver.py`)
 
 The Hamiltonian matrix with no electron interaction is constructed directly from the kinetic integral matrix and the nuclear attraction (potential) integral matrix: $\mathbf{H} = \mathbf{T} + \mathbf{V}$. This is also used as the initial guess for the Fock matrix in this implementation, although there are different guess strategies.
 
-Closed-shell density matrix from the occupied MO block $\mathbf{C}_{\text{occ}}$
-($n_{\text{docc}}$ columns):
+Closed-shell density matrix from the occupied MO block $\mathbf{C}_{\text{occ}}$ ($n_{\text{docc}}$ columns):
 
 $$
 D_{\mu\nu} = \sum_{i}^{\text{occ}} C_{\mu i} C_{\nu i} = (\mathbf{C}_{\text{occ}}\mathbf{C}_{\text{occ}}^T)_{\mu\nu}
@@ -99,3 +98,62 @@ $$
 
 **Why different shell-level angular normalization schemes doesn't break the energy:** 
 The generalized eigensolve above enforces $\mathbf{C}^T\mathbf{S}\mathbf{C}=\mathbf{I}$ using the $\mathbf{S}$ constructed from the AO basis, so even if any given AO is scaled by some constant, that scaling is automatically absorbed into the corresponding MO coefficients. The physical molecular orbitals and total energy come out identical either way. What is not identical are the electron integrals themselves, confirmed directly for cc-pVDZ, where individual $S,T,V,I$ entries differ from Psi4's reference values while the converged SCF energy still matches to $\sim\!10^{-8}\,E_h$. (See NVIDIA cuEST Documentation above)
+
+---
+
+## 3. DIIS convergence acceleration — `diis` (`roothan_solver.py`)
+
+The DIIS residual error vector, which vanishes at convergence, is defined as:
+
+$$
+\mathbf{e}_i = \mathbf{F}_i\mathbf{D}_i\mathbf{S} - \mathbf{S}\mathbf{D}_i\mathbf{F}_i
+$$
+
+We can represent the current residual vector $\mathbf{e}_{m+1}$ as a linear combination of previous residual vectors:
+
+$$
+\mathbf{e}_{m+1} = \sum_i^m c_i \mathbf{e}_i
+$$
+
+By minimizing $\left\|\sum_i c_i \mathbf{e}_i\right\|^2$ to approximate the zero vector in the least-square sense under the constraint $\sum_i c_i = 1$, a Lagrange-multiplier problem, which will lead to the construction of the matrix equation:
+
+$$
+\begin{pmatrix} B_{11} & \cdots & B_{1n} & -1 \\ \vdots & \ddots & \vdots & \vdots \\ B_{n1} & \cdots & B_{nn} & -1 \\ -1 & \cdots & -1 & 0 \end{pmatrix}
+\begin{pmatrix} c_1 \\ \vdots \\ c_n \\ \lambda \end{pmatrix}
+=
+\begin{pmatrix} 0 \\ \vdots \\ 0 \\ -1 \end{pmatrix}, \qquad B_{ij} = \mathbf{e}_i \cdot \mathbf{e}_j
+$$
+
+`e_array @ e_array.T` computes every pairwise error-vector dot product $B_{ij}$ in a single matrix multiply. The extrapolated Fock matrix, $\mathbf{F}_{\text{new}} = \sum_i c_i \mathbf{F}_i$, is built via `np.einsum('i,ijk->jk', coeffs, F_history)`. A sliding 8-iteration history window keeps the DIIS subspace from being polluted by early, poorly-converged iterations. 
+
+*Source: [Sherrill group, "Some Comments on Accelerating Convergence of Iterative Sequences Using Direct Inversion of the Iterative Subspace (DIIS)"](https://vergil.chemistry.gatech.edu/static/content/diis.pdf)*
+
+---
+
+## 4. Mulliken Population Analysis — `calc_mulliken_charges` (`roothan_solver.py`)
+
+Mulliken analysis partitions the total electron density among atoms by assigning each basis function's population to the atom on which it is centered. The population matrix is defined as:
+
+$$
+\mathbf{P} = 2\,\mathbf{D}\mathbf{S}
+$$
+
+where the factor of 2 accounts for double occupancy of the restricted spatial orbitals. The trace recovers the total electron count, $\sum_\mu P_{\mu\mu} = N_{\text{elec}}$, so the diagonal element $P_{\mu\mu}$ is interpreted as the number of electrons associated with basis function $\mu$. `np.diag(P)` extracts these AO populations.
+
+The total (electron) population on atom $A$ is the sum over all basis functions centered on that atom:
+
+$$
+e_A = \sum_{\mu \in A} P_{\mu\mu}
+$$
+
+`basis.function_to_center(ao_idx)` maps each basis function to its parent atom, and the loop accumulates $P_{\mu\mu}$ into the corresponding atomic total.
+
+The Mulliken charge is the difference between the nuclear charge and the electrons assigned to the atom:
+
+$$
+Q_A = Z_A - e_A
+$$
+
+By construction, $\sum_A Q_A$ equals the total molecular charge, and $\sum_A e_A$ equals the total number of electrons.
+
+*Source: [Szabo & Ostlund, Ch. 3.4]*
