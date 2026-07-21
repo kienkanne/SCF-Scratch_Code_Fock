@@ -118,13 +118,13 @@ $$
 By minimizing $\left\|\sum_i c_i \mathbf{e}_i\right\|^2$ to approximate the zero vector in the least-square sense under the constraint $\sum_i c_i = 1$, a Lagrange-multiplier problem, which will lead to the construction of the matrix equation:
 
 $$
-\begin{pmatrix} B_{11} & \cdots & B_{1n} & -1 \\ \vdots & \ddots & \vdots & \vdots \\ B_{n1} & \cdots & B_{nn} & -1 \\ -1 & \cdots & -1 & 0 \end{pmatrix}
-\begin{pmatrix} c_1 \\ \vdots \\ c_n \\ \lambda \end{pmatrix}
+\begin{pmatrix} B_{11} & \cdots & B_{1n} & -1 \\\\ \vdots & \ddots & \vdots & \vdots \\\\ B_{n1} & \cdots & B_{nn} & -1 \\\\ -1 & \cdots & -1 & 0 \end{pmatrix}
+\begin{pmatrix} c_1 \\\\ \vdots \\\\ c_n \\\\ \lambda \end{pmatrix}
 =
-\begin{pmatrix} 0 \\ \vdots \\ 0 \\ -1 \end{pmatrix}, \qquad B_{ij} = \mathbf{e}_i \cdot \mathbf{e}_j
+\begin{pmatrix} 0 \\\\ \vdots \\\\ 0 \\\\ -1 \end{pmatrix}, \qquad B_{ij} = \mathbf{e}_i \cdot \mathbf{e}_j
 $$
 
-`e_array @ e_array.T` computes every pairwise error-vector dot product $B_{ij}$ in a single matrix multiply. The extrapolated Fock matrix, $\mathbf{F}_{\text{new}} = \sum_i c_i \mathbf{F}_i$, is built via `np.einsum('i,ijk->jk', coeffs, F_history)`. A sliding 8-iteration history window keeps the DIIS subspace from being polluted by early, poorly-converged iterations. 
+`e_array @ e_array.T` computes every pairwise error-vector dot product $B_{ij}$ in a single matrix multiply. The extrapolated Fock matrix, $\mathbf{F}_{\text{new}} = \sum_i c_i \mathbf{F}_i$, is built via `np.einsum('i,ijk->jk', coeffs, F_history)`. A sliding 8-iteration history window keeps the DIIS subspace from being polluted by early, poorly-converged iterations.
 
 *Source: [Sherrill group, "Some Comments on Accelerating Convergence of Iterative Sequences Using Direct Inversion of the Iterative Subspace (DIIS)"](https://vergil.chemistry.gatech.edu/static/content/diis.pdf)*
 
