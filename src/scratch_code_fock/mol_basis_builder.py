@@ -65,12 +65,16 @@ class Basis:
         self.nao = 0
         self.name = ""
         self.ndocc = 0
+        self.atom_indices = [] # len equal self.nao
 
     def nshell(self):
         return len(self.shells)
 
     def shell(self, idx):
         return self.shells[idx]
+
+    def function_to_center(self, idx):
+        return self.atom_indices[idx]
 
 
 class Molecule:
@@ -99,16 +103,6 @@ class Molecule:
 
         # Optionally set all to be called upon initialization
         self.V_nn = self.get_nuclear_repulsion()
-        self.set_scf_settings()
-
-
-    def set_scf_settings(self, max_iter=100, e_conv=1e-6, startup_iter=5, grad_max=1e-6, grad_rms=1e-6, verbose=0):
-        self.max_iter = max_iter
-        self.startup_iter = startup_iter
-        self.e_conv = e_conv
-        self.grad_max = grad_max
-        self.grad_rms = grad_rms
-        self.verbose = verbose
 
 
     def get_nuclear_repulsion(self):
@@ -185,7 +179,11 @@ class Molecule:
                     ))
                     
                     # Advance function index by the number of Cartesian functions: (L+1)*(L+2)/2
-                    function_index += (am + 1) * (am + 2) // 2
+                    n_cart = (am + 1) * (am + 2) // 2
+                    function_index += n_cart
+
+                    # Assign corresponding functions to current atom index
+                    basis.atom_indices += [atom_index] * n_cart
                     
         basis.nao = function_index
         basis.name = basis_name.upper()

@@ -1,4 +1,5 @@
 import numpy as np
+from scratch_code_fock.mol_basis_builder import Molecule, Basis
 
 
 def diis(e_list: list) -> np.ndarray:
@@ -26,13 +27,10 @@ def diis(e_list: list) -> np.ndarray:
     return c[:size]
 
 
-def roothan_solver(mol, S, T, V, I):
-    max_iter = mol.max_iter
-    startup_iter = mol.startup_iter
-    e_conv = mol.e_conv
-    grad_max = mol.grad_max
-    grad_rms = mol.grad_rms
-    verbose = mol.verbose
+def roothan_solver(mol: Molecule, S, T, V, I,
+                   max_iter=100, e_conv=1e-6, startup_iter=5, grad_max=1e-6, grad_rms=1e-6, verbose=0,
+                   basis=None, return_mulliken=False):
+    # TODO: `return_mulliken` should be separated
     ndocc = mol.ndocc
     V_nn = mol.V_nn
 
@@ -57,7 +55,7 @@ def roothan_solver(mol, S, T, V, I):
         if (i == max_iter + 1):
             raise Exception("Maximum number of SCF iterations exceeded.")
         
-        if (i == startup_iter + 1) and verbose == 0:
+        if (i == startup_iter + 1) and verbose >= 2:
             print ("DIIS turned on!")
 
         # 1. Diagonalize current Fock matrix F
@@ -89,14 +87,18 @@ def roothan_solver(mol, S, T, V, I):
         max_error = np.max(np.abs(err_vector))
         rms_error = np.sqrt(np.mean(err_vector**2))
 
-        if verbose == 0:
+        if verbose >=2:
             print(f"SCF Iteration {i:3d}: | Energy = {E0:4.16f} | dE = {dE: 1.5E} | Max_E = {max_error: 1.5E} | RMS_E = {rms_error: 1.5E}")
 
         # 5. Convergence check
         if np.abs(dE) < e_conv and max_error < grad_max and rms_error < grad_rms:
-            if verbose <= 1:
+            if verbose >= 1:
                 print("SCF Converged!")
                 print('Final RHF Energy: %.10f a.u.' % E0)
+            
+            if basis is not None and return_mulliken:
+                return E0, calc_mulliken_charges(mol, basis, D, S)
+            
             return E0
 
         E0_last = E0
@@ -111,3 +113,25 @@ def roothan_solver(mol, S, T, V, I):
             
             # Extrapolate F
             F = np.einsum('i,ijk->jk', coeffs, np.array(F_list[history]))
+
+
+def calc_mulliken_charges(mol: Molecule, basis: Basis, D, S):
+    from scratch_code_fock.mol_basis_builder import ATOMIC_NUMBERS
+    P = 2.0 * (D @ S)
+
+    ao_populations = np.diag(P)
+
+    num_atoms = len(mol.atoms)
+    atom_electrons = np.zeros(num_atoms)
+
+    nbf = S.shape[0]
+    for ao_idx in range(nbf):
+        atom_center = basis.function_to_center(ao_idx)
+        atom_electrons[atom_center] += ao_populations[ao_idx]
+
+    mulliken_charges = np.zeros_like(atom_electrons)
+    for i in range(num_atoms):
+        Z = ATOMIC_NUMBERS[mol.atoms[i].upper()]
+        mulliken_charges[i] = Z - atom_electrons[i]
+
+    return mulliken_charges
