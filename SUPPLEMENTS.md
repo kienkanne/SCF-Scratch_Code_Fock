@@ -157,3 +157,274 @@ $$
 By construction, $\sum_A Q_A$ equals the total molecular charge, and $\sum_A e_A$ equals the total number of electrons.
 
 *Source: [Szabo & Ostlund, Ch. 3.4]*
+
+## 5. Overlap integrals — `get_overlap_integrals` (`integral_solvers.py`)
+
+### Definition
+
+The two-center overlap integral between two primitive Cartesian Gaussians is
+
+$$
+S_{ab} = (\mathbf{a}|\mathbf{b}) = \int d\mathbf{r}\; \phi_a(\mathbf{r})\,\phi_b(\mathbf{r})
+$$
+
+### Notations
+
+For two primitives on centers $\mathbf{A}$ (exponent $a$) and $\mathbf{B}$ (exponent $b$), the Gaussian Product Theorem gives a single Gaussian on the weighted center $\mathbf{P}$:
+
+$$
+\zeta = a+b, \qquad \xi = \frac{ab}{\zeta}, \qquad \mathbf{P} = \frac{a\mathbf{A}+b\mathbf{B}}{\zeta}
+$$
+
+$$
+e^{-a|\mathbf{r}-\mathbf{A}|^2} e^{-b|\mathbf{r}-\mathbf{B}|^2} = K_{AB}\, e^{-\zeta|\mathbf{r}-\mathbf{P}|^2}, \qquad K_{AB} = e^{-\xi|\mathbf{A}-\mathbf{B}|^2}
+$$
+
+All recursions below are the Obara-Saika (OS) vertical recurrence relations built on this product Gaussian.
+
+### Decoupling S_base (a math trick *and* a code trick)
+
+The s-s base case, where both functions with zero angular momentum, is the Gaussian product prefactor:
+
+$$
+S_{\text{base}} = S_{00} = \left(\frac{\pi}{\zeta}\right)^{3/2} \cdot e^{-\xi|\mathbf{A}-\mathbf{B}|^2}
+$$
+
+This factor does not depend on the individual angular momentum indices, i.e. $n_{ax}$. Every higher-angular-momentum overlap is $S_{\text{base}}$ multiplied by a dimensionless, purely angular-momentum-dependent factor. This was exploited by splitting the work: `get_overlap_integrals` returns only the dimensionless table $\tilde{S}$ (seeded at $\tilde{S}_{00}=1$), and $S_{\text{base}}$ is computed once per primitive pair up in `matrix_builders.py`. This is a **code trick** (compute the  prefactor once, not once per angular component) as much as a **math trick** (the recursion tables are cleaner when stripped of the exponent-dependent constant).
+
+### Independence of Cartesian axes (and why NAI/ERI can't do this)
+
+Since there is no operator coupling the three Cartesian directions, the Gaussian product therefore factorizes cleanly, and the 3D overlap is an exact product of three independent 1D tables:
+
+$$
+S_{ab} = S_{\text{base}}\;
+\tilde{S}^{(x)}_{n_{ax}\,n_{bx}}\;
+\tilde{S}^{(y)}_{n_{ay}\,n_{by}}\;
+\tilde{S}^{(z)}_{n_{az}\,n_{bz}}
+$$
+
+This separability is the extremely important for overlap integrals to be computed easily, and it is **exactly what nuclear attraction (6.) and electron repulsion (7.) lack**: the $1/r$ Coulomb operator is not separable across Cartesian axes, so those integrals cannot be written as a product of independent 1D tables and instead require a shared Boys-function index coupling all axes together. 
+
+### The OS recursion
+
+$$
+\tilde{S}^{(x)}_{i,0} = (P_x - A_x)\,\tilde{S}_{i-1,0} + \frac{i-1}{2\zeta}\,\tilde{S}_{i-2,0}
+$$
+$$
+\tilde{S}^{(x)}_{i,j} = (P_x - B_x)\,\tilde{S}_{i,j-1} + \frac{i}{2\zeta}\,\tilde{S}_{i-1,j-1}
+              + \frac{j-1}{2\zeta}\,\tilde{S}_{i,j-2}
+$$
+
+**Index convetion:** $\tilde{S}^{(x)}_{i,j}$ is the dimensionless overlap along the $x$-axis between an $x$-angular-momentum of $i$ on center A and $j$ on center B. The code indexes the table as `SI[axis, i, j]` with `axis` in $\{0,1,2\}$ vectorizing $x,y,z$ simultaneously, since $\mathbf{P}-\mathbf{A}$ and $\mathbf{P}-\mathbf{B}$ are 3-vectors and the recursion is identical along each axis.
+
+Note the recursion below is written in "step-down" form ($S_{i,j}$ in terms of $S_{i-1,\cdot}$) rather than the "step-up" form ($S_{i+1,j}$, $S_{i,j+1}$) used in the original Obara–Saika paper. The two are algebraically identical; the step-down indexing reads more naturally when filling a table from the origin outward, which is what the code does.
+
+**The algorithm:** We fill a $(l_a{+}1)\times(l_b{+}1)$ table of angular-momentum index pairs. The code fills it in two phases, matching the two relations above:
+1. **The $j=0$ column** ($\tilde{S}_{i,0}$) is filled first by pure center-A stepping, each entry depends only on lower-$i$ entries in the same column.
+2. **The $j>0$ entries** ($\tilde{S}_{i,j}$) are then filled by center-B stepping, each depending on entries already computed in the $j-1$ and $j-2$ columns.
+
+A source term is 0 whenever its index would go negative.
+
+## 6. Kinetic energy integrals — `get_kinetic_integrals` (`integral_solvers.py`)
+
+### Definition
+
+The two-center kinetic energy integral is
+
+$$
+T_{ab} = (\mathbf{a}|{-\tfrac12}\nabla^2|\mathbf{b})
+       = -\frac{1}{2}\int d\mathbf{r}\; \phi_a(\mathbf{r})\,\nabla^2\phi_b(\mathbf{r})
+$$
+
+### Decoupling T_base, and why it is *not* a flat product
+
+Like overlap, the kinetic integral shares the same $S_{\text{base}}$ Gaussian prefactor, and `get_kinetic_integrals` returns a dimensionless per-axis table $\tilde{T}$ seeded so the s-s case is correct relative to $S_{\text{base}}$. The seed is the 1D s-s kinetic shape factor per axis:
+
+$$
+\tilde{T}^{(x)}_{0,0} = \xi \, (1 - 2\xi\,(A_x - B_x)^2)
+$$
+
+**The difference from overlap.** The kinetic operator is the Laplacian, a sum
+of three second derivatives. By the product rule, differentiating one Cartesian axis leaves the other two axes as **overlap integrals**. The 3D kinetic integral is therefore a sum of three cross terms (Helgaker 2000, eq. 9.3.38):
+
+$$
+T_{ab} = S_{\text{base}}\Big[
+\tilde{T}^{(x)}\tilde{S}^{(y)}\tilde{S}^{(z)}
++ \tilde{S}^{(x)}\tilde{T}^{(y)}\tilde{S}^{(z)}
++ \tilde{S}^{(x)}\tilde{S}^{(y)}\tilde{T}^{(z)}
+\Big]
+$$
+
+(indices $n_{ax}n_{bx}$ etc. suppressed for readability). Writing it as $S_{\text{base}}\,\tilde{T}^{(x)}\tilde{T}^{(y)}\tilde{T}^{(z)}$ is **incorrect**. It passes s/p-only validation by coincidence (the cross terms and the flat product happen to agree when at most one axis carries angular momentum) and only fails once $l \geq 2$ appears on a mixed component. This assembly lives in `build_S_T_V` (`matrix_builders.py`), which is why `get_kinetic_integrals` returns only the per-axis $\tilde{T}$ pieces and depends on the overlap table $\tilde{S}$ as an input.
+
+Kinetic is not *fully* separable like overlap. Each individual term in the sum above is a product of one kinetic axis and two overlap axes, so the algorithm is still per-axis 1D tables, only the **assembly** changes.
+
+### The OS recursion
+
+$$
+\tilde{T}_{i,0} = X_{PA}\,\tilde{T}_{i-1,0} + \frac{i-1}{2\zeta}\,\tilde{T}_{i-2,0}
++ 2\xi\left[\tilde{S}_{i,0} - \frac{i-1}{2a}\,\tilde{S}_{i-2,0}\right]
+$$
+$$
+\tilde{T}_{i,j} = X_{PB}\,\tilde{T}_{i,j-1} + \frac{i}{2\zeta}\,\tilde{T}_{i-1,j-1}
++ \frac{j-1}{2\zeta}\,\tilde{T}_{i,j-2}
++ 2\xi\left[\tilde{S}_{i,j} - \frac{j-1}{2b}\,\tilde{S}_{i,j-2}\right]
+$$
+
+**The algorithm.** Structurally identical to overlap — a $(l_a{+}1)\times(l_b{+}1)$ table filled in two phases (the $j=0$ column by center-A stepping, then $j>0$ by center-B stepping). The only addition is the bracketed final term that requires the overlap table. This is why `get_overlap_integrals` is always called before `get_kinetic_integrals`.
+
+**Note.** This scheme (building $\tilde{T}$ as a correction on top of $\tilde{S}$, with the sum-of-cross-terms 3D assembly one layer up) was assembled from the general OS relations rather than copied from any single source, and these were verified matching Psi4's `mints.ao_kinetic()` with s/p/d/f test cases.
+
+[Obara & Saika, 1986]
+
+
+## 7. The Boys function — `boys_function` (`integral_solvers.py`)
+
+Every integral involving the $1/r_{12}$ Coulomb operator against Gaussians uses the Boys function
+
+$$
+F_m(x) = \int_0^1 t^{2m}\, e^{-x t^2}\, dt
+$$
+
+This implementation evaluates it via the gamma function and the (`scpy.special.gamma`) and the incomplete gamma function (`scipy.special.gammainc`) (Helgaker 2000, eq. 9.8.21):
+
+$$
+F_m(x) = \frac{\Gamma(m+\tfrac12)}{2\, x^{m+1/2}} \, P\!\left(m+\tfrac12,\, x\right), \qquad
+P(a,x) = \frac{\gamma(a,x)}{\Gamma(a)}
+$$
+
+At the limit $x \to 0$ branch, the code uses the direct limit $F_m(0) = \tfrac{1}{2m+1}$ when `x < 1e-9`, The formula above is $0/0$ indeterminate at $x=0$.
+
+[Original definition: S. F. Boys, *Proc. R. Soc. Lond. A* **200**, 542 (1950).]
+
+
+## 8. Nuclear attraction integrals — `get_NAIs` (`integral_solvers.py`)
+
+### Definition
+
+The one-electron nuclear attraction integral between two primitives and a point charge at nucleus $\mathbf{C}$ is
+
+$$
+V_{ab} = \left(\mathbf{a}\left|\frac{1}{|\mathbf{r}-\mathbf{C}|}\right|\mathbf{b}\right)
+       = \int d\mathbf{r}\; \frac{\phi_a(\mathbf{r})\,\phi_b(\mathbf{r})}{|\mathbf{r}-\mathbf{C}|}
+$$
+
+### The axes no longer separate
+
+Overlap and kinetic factor into per-axis 1D tables because their operators do not couple the Cartesian directions. The Coulomb operator $1/|\mathbf{r}-\mathbf{C}|$ **does**. Tt is a function of the full 3D distance and cannot be split into independent Cartesian axes. Instead, the coupling is handled by introducing an **auxiliary index $m$**, the Boys function order, which threads through all three axes simultaneously. This is why the working array is 7-dimensional $(n_{ax}, n_{ay}, n_{az}, n_{bx}, n_{by}, n_{bz}, m)$, rather than three separate 2D tables.
+
+### The Boys function seed
+
+The recursion is seeded on the Boys function with argument $U = \zeta\,|\mathbf{P}-\mathbf{C}|^2$:
+
+$$
+[\mathbf{0}|\mathbf{0}]^{(m)} = F_m(U), \qquad m = 0, 1, \ldots, l_a+l_b
+$$
+
+Only the $m=0$ value is physically meaningful in the final integral; the higher-$m$ values only serves as a "scaffold" as the recursion climbs in angular momentum. This is why the base case must seed *all* orders $m=0\ldots l_a+l_b$ up front, and why the code reads out only `VI[..., 0]`.
+
+### The V_base prefactor and the nuclear charge
+
+The Gaussian/Coulomb prefactor is $V_{\text{base}} = 2\sqrt{\zeta/\pi}\;S_{\text{base}}$. It's an prefactor independent of angular momentum, so it's computed outside the function. The final matrix element also carries the nuclear charge $-Z_C$, summed over all nuclei $\mathbf{C}$. These terms are multiplied in `build_S_T_V`
+
+### The OS recursion
+
+Stepping up the $x$-index on center A has the following recursion:
+
+$$
+[\mathbf{a}{+}1_x|\mathbf{b}]^{(m)} =
+(P_x - A_x)\,[\mathbf{a}|\mathbf{b}]^{(m)}
+- (P_x - C_x)\,[\mathbf{a}|\mathbf{b}]^{(m+1)}
++ \frac{a_x}{2\zeta}\Big([\mathbf{a}{-}1_x|\mathbf{b}]^{(m)} - [\mathbf{a}{-}1_x|\mathbf{b}]^{(m+1)}\Big)
++ \frac{b_x}{2\zeta}\Big([\mathbf{a}|\mathbf{b}{-}1_x]^{(m)} - [\mathbf{a}|\mathbf{b}{-}1_x]^{(m+1)}\Big)
+$$
+
+The other five spatial directions follow the identical pattern with the appropriate displacement vector.
+
+**The algorithm:** Unlike the overlap table, we cannot fill this axis-by-axis independently, the $m$-coupling forces a specific global order. The code fills the table shell by shell in total angular momentum $L = 1, 2, \ldots, l_a+l_b$. For each $L$, it visits only
+the index combinations whose spatial indices sum to exactly $L$, and for each such
+combination fills all needed orders $m = 0 \ldots (l_a+l_b - L)$. Building strictly in
+increasing $L$ guarantees every lower-$L$ dependency already exists before it is needed.
+Within a combination, the code steps up the *first* nonzero spatial index it finds (the
+six `if/elif` branches), since any valid step-down direction yields the same result.
+
+### Index conventions and the shift helper
+
+The 7-index recursion has too many boundary conditions to write as explicit `if` branches per term. Also, the pattern of the recursion is also noticable, each term there is only one or two indices shifted. `shift_NAI({axis: delta, ...})` takes the current loop indices, applies the requested shifts, and returns 0 automatically if any index would go negative. This keeps each recursion term readable as a direct transcription of the OS formula. 
+
+[Obara & Saika, 1986]
+
+
+## 9. Electron repulsion integrals — `get_ERIs` (`integral_solvers.py`)
+
+### Definition
+
+The two-electron repulsion integral over four primitives, in chemist's notation, is
+
+$$
+(\mathbf{a}\mathbf{b}|\mathbf{c}\mathbf{d}) =
+\iint d\mathbf{r}_1\,d\mathbf{r}_2\;
+\frac{\phi_a(\mathbf{r}_1)\phi_b(\mathbf{r}_1)\,\phi_c(\mathbf{r}_2)\phi_d(\mathbf{r}_2)}{|\mathbf{r}_1-\mathbf{r}_2|}
+$$
+
+### The four-center generalization of NAI
+
+The ERI is the nuclear attraction integral taken to extreme. The same non-separability applies, so the same $m$-index is needed, but now over four centers instead of two. This is the origin of the **13-dimensional** working array: three spatial indices on each of the four centers, plus the shared Boys order $m$.
+
+### Notations
+
+Each electron's pair collapses to a Gaussian-product center (as in §1):
+
+$$
+\zeta = a+b,\quad \mathbf{P} = \frac{a\mathbf{A}+b\mathbf{B}}{\zeta};
+\qquad
+\eta = c+d,\quad \mathbf{Q} = \frac{c\mathbf{C}+d\mathbf{D}}{\eta}
+$$
+
+The two products then couple through a **combined center** $\mathbf{W}$ and reduced
+exponent $\rho$:
+
+$$
+\mathbf{W} = \frac{\zeta\mathbf{P} + \eta\mathbf{Q}}{\zeta+\eta},
+\qquad \rho = \frac{\zeta\eta}{\zeta+\eta}
+$$
+
+$\mathbf{W}-\mathbf{P}$ and $\mathbf{W}-\mathbf{Q}$ in ERI play a similar role to $\mathbf{P}-\mathbf{C}$ in NAI.
+
+### The Boys function seed and prefactor
+
+Seeded on the Boys function with argument $T = \rho\,|\mathbf{P}-\mathbf{Q}|^2$:
+
+$$
+[\mathbf{00}|\mathbf{00}]^{(m)} = F_m(T), \qquad m = 0,\ldots,l_a+l_b+l_c+l_d
+$$
+
+with prefactor $\text{ERI}_{\text{base}} = 2\sqrt{\rho/\pi}\;S_{\text{base}}^{(ab)}
+S_{\text{base}}^{(cd)}$, the product of both pairs' Gaussian prefactors. As in NAI, the code only reads the final integral, the $m=0$ case: `ERI_raw[..., 0]`.
+
+### The recursion — stepping to fill the table
+
+Stepping up the $x$-index on center A has the following recursion:
+
+$$
+[\mathbf{a}{+}1_x\,\mathbf{b}|\mathbf{c}\,\mathbf{d}]^{(m)} =
+(P_x - A_x)\,[\cdots]^{(m)} + (W_x - P_x)\,[\cdots]^{(m+1)}
+$$
+$$
++ \frac{a_x}{2\zeta}\!\left([\mathbf{a}{-}1_x\cdots]^{(m)} - \tfrac{\eta}{\zeta+\eta}[\mathbf{a}{-}1_x\cdots]^{(m+1)}\right)
++ \frac{b_x}{2\zeta}\!\left(\cdots\right)
+$$
+$$
++ \frac{c_x}{2(\zeta+\eta)}[\cdots\mathbf{c}{-}1_x\cdots]^{(m+1)}
++ \frac{d_x}{2(\zeta+\eta)}[\cdots\mathbf{d}{-}1_x]^{(m+1)}
+$$
+
+All twelve spatial directions follow the same pattern with the appropriate center's displacement and exponent. [$\cdots$] means that the indices remain unchanged to the current indicies. 
+
+**The algorithm.** Identical strategy to NAI, scaled up: fill shell by shell in total angular momentum $L = 1, \ldots, l_a{+}l_b{+}l_c{+}l_d$, visiting only index combinations summing to $L$, filling orders $m = 0 \ldots (L_{\max}-L)$, stepping the first nonzero spatial index (the twelve `if/elif` branches). Increasing-$L$ order guarantees dependencies exist before use.
+
+### Index conventions and the swap helper
+
+`swap_ERI({axis: delta, ...})` is the 13-index analog of `shift_NAI`: same shift-and-bounds-check pattern, with the axis map now spanning all twelve spatial indices $(ax,ay,az,bx,by,bz,cx,cy,cz,dx,dy,dz)$ plus $m$. This makes the code *slightly* readable.
+
+[Obara & Saika, 1986]
