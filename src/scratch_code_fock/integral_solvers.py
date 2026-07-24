@@ -65,7 +65,7 @@ def get_kinetic_integrals(PA, PB, expa, expb, AMa, AMb, SI):
 
 
 def boys_function(m, x):
-    """Evaluates the Boys function F_m(x) using Scipy's error function."""
+    """Evaluates the Boys function F_m(x) using Scipy's incomplete gamma function."""
     if x < 1e-9:
         return 1.0 / (2 * m + 1)
    
