@@ -4,11 +4,12 @@ This is the mathematical supplements to the scratch-built RHF/SCF engine in this
 Every section below corresponds to one function or class in the codebase
 
 **This is a from-scratch, first-principles, proof-of-concept-focused implementation.**
+
 Every integral is evaluated via explicit Obara-Saika recursion in pure NumPy, with no primitive screening or batching. It is not meant to be fast, it is meant to be a direct, line-by-line map from the equations below to working code.
 
 ---
 
-## 1. Gaussian normalization — `Shell.__init__` (`mol_basis_builder.py`)
+## 1. Gaussian normalization: `Shell.__init__` (`mol_basis_builder.py`)
 
 Every contracted Cartesian basis function is a normalized sum of primitives:
 
@@ -29,9 +30,7 @@ S_{pq} = \left(\dfrac{2\sqrt{\alpha_p\alpha_q}}{\alpha_p+\alpha_q}\right)^{l+3/2
 N_{\text{cont}} = \left( \sum_{p,q} c_p c_q S_{pq} \right)^{-1/2}
 ```
 
-`effective_coef` returns $N_{\text{cont}} c_p N_{\text{prim}}(\alpha_p)$ —
-the single scalar multiplied into every integral involving this primitive in
-`matrix_builders.py`.
+`effective_coef` returns $N_{\text{cont}} c_p N_{\text{prim}}(\alpha_p)$, which is the single scalar multiplied into every integral involving this primitive in `matrix_builders.py`.
 
 **Primitive normalization** (self-overlap of a single primitive $=1$), for the "pure" axial component $(l,0,0)$:
 
@@ -55,7 +54,7 @@ which reduces to $1/\sqrt{(2l-1)!!}$ for pure components but gives exactly $1$ f
 
 ---
 
-## 2. Matrices construction, Roothaan-Hall equations, and symmetric orthogonalization — `roothan_solver` (`roothan_solver.py`)
+## 2. Matrices construction, Roothaan-Hall equations, and symmetric orthogonalization: `roothan_solver` (`roothan_solver.py`)
 
 The Hamiltonian matrix with no electron interaction is constructed directly from the kinetic integral matrix and the nuclear attraction (potential) integral matrix: $\mathbf{H} = \mathbf{T} + \mathbf{V}$. This is also used as the initial guess for the Fock matrix in this implementation, although there are different guess strategies.
 
@@ -104,7 +103,7 @@ The generalized eigensolve above enforces $\mathbf{C}^T\mathbf{S}\mathbf{C}=\mat
 
 ---
 
-## 3. DIIS convergence acceleration — `diis` (`roothan_solver.py`)
+## 3. DIIS convergence acceleration: `diis` (`roothan_solver.py`)
 
 The DIIS residual error vector, which vanishes at convergence, is defined as:
 
@@ -133,7 +132,7 @@ By minimizing $`\left\|\sum_i c_i \mathbf{e}_i\right\|^2`$ to approximate the ze
 
 ---
 
-## 4. Mulliken Population Analysis — `calc_mulliken_charges` (`roothan_solver.py`)
+## 4. Mulliken Population Analysis: `calc_mulliken_charges` (`roothan_solver.py`)
 
 Mulliken analysis partitions the total electron density among atoms by assigning each basis function's population to the atom on which it is centered. The population matrix is defined as:
 
@@ -161,7 +160,7 @@ By construction, $`\sum_A Q_A`$ equals the total molecular charge, and $`\sum_A 
 
 *Source: [Szabo & Ostlund, Ch. 3.4]*
 
-## 5. Overlap integrals — `get_overlap_integrals` (`integral_solvers.py`)
+## 5. Overlap integrals: `get_overlap_integrals` (`integral_solvers.py`)
 
 ### Definition
 
@@ -228,7 +227,9 @@ Note the recursion below is written in "step-down" form ($`S_{i,j}`$ in terms of
 
 A source term is 0 whenever its index would go negative.
 
-## 6. Kinetic energy integrals — `get_kinetic_integrals` (`integral_solvers.py`)
+*Source: [S. Obara and A. Saika, J. Chem. Phys 84, 3963 (1986)](http://aip.scitation.org/doi/abs/10.1063/1.450106)*
+
+## 6. Kinetic energy integrals: `get_kinetic_integrals` (`integral_solvers.py`)
 
 ### Definition
 
@@ -274,14 +275,13 @@ Kinetic is not *fully* separable like overlap. Each individual term in the sum a
 + 2\xi\left[\tilde{S}_{i,j} - \frac{j-1}{2b} \tilde{S}_{i,j-2}\right]
 ```
 
-**The algorithm.** Structurally identical to overlap — a $(l_a{+}1)\times(l_b{+}1)$ table filled in two phases (the $j=0$ column by center-A stepping, then $j>0$ by center-B stepping). The only addition is the bracketed final term that requires the overlap table. This is why `get_overlap_integrals` is always called before `get_kinetic_integrals`.
+**The algorithm.** Structurally identical to overlap: a $(l_a{+}1)\times(l_b{+}1)$ table filled in two phases (the $j=0$ column by center-A stepping, then $j>0$ by center-B stepping). The only addition is the bracketed final term that requires the overlap table. This is why `get_overlap_integrals` is always called before `get_kinetic_integrals`.
 
 **Note.** This scheme (building $\tilde{T}$ as a correction on top of $\tilde{S}$, with the sum-of-cross-terms 3D assembly one layer up) was assembled from the general OS relations rather than copied from any single source, and these were verified matching Psi4's `mints.ao_kinetic()` with s/p/d/f test cases.
 
-[Obara & Saika, 1986]
+*Source: [S. Obara and A. Saika, J. Chem. Phys 84, 3963 (1986)](http://aip.scitation.org/doi/abs/10.1063/1.450106)*
 
-
-## 7. The Boys function — `boys_function` (`integral_solvers.py`)
+## 7. The Boys function: `boys_function` (`integral_solvers.py`)
 
 Every integral involving the $1/r_{12}$ Coulomb operator against Gaussians uses the Boys function
 
@@ -300,8 +300,9 @@ At the limit $x \to 0$ branch, the code uses the direct limit $F_m(0) = \tfrac{1
 
 [Original definition: S. F. Boys, *Proc. R. Soc. Lond. A* **200**, 542 (1950).]
 
+*Original definition: [S. F. Boys, Proc. R. Soc. London A 200, 542 (1950)](http://dx.doi.org/10.1098/rspa.1950.0036)*
 
-## 8. Nuclear attraction integrals — `get_NAIs` (`integral_solvers.py`)
+## 8. Nuclear attraction integrals: `get_NAIs` (`integral_solvers.py`)
 
 ### Definition
 
@@ -344,21 +345,16 @@ Stepping up the $x$-index on center A has the following recursion:
 
 The other five spatial directions follow the identical pattern with the appropriate displacement vector.
 
-**The algorithm:** Unlike the overlap table, we cannot fill this axis-by-axis independently, the $m$-coupling forces a specific global order. The code fills the table shell by shell in total angular momentum $L = 1, 2, \ldots, l_a+l_b$. For each $L$, it visits only
-the index combinations whose spatial indices sum to exactly $L$, and for each such
-combination fills all needed orders $m = 0 \ldots (l_a+l_b - L)$. Building strictly in
-increasing $L$ guarantees every lower-$L$ dependency already exists before it is needed.
-Within a combination, the code steps up the *first* nonzero spatial index it finds (the
-six `if/elif` branches), since any valid step-down direction yields the same result.
+**The algorithm:** Unlike the overlap table, we cannot fill this axis-by-axis independently, the $m$-coupling forces a specific global order. The code fills the table shell by shell in total angular momentum $L = 1, 2, \ldots, l_a+l_b$. For each $L$, it visits only the index combinations whose spatial indices sum to exactly $L$, and for each such combination fills all needed orders $m = 0 \ldots (l_a+l_b - L)$. Building strictly in increasing $L$ guarantees every lower-$L$ dependency already exists before it is needed. Within a combination, the code steps up the *first* nonzero spatial index it finds (the six `if/elif` branches), since any valid step-down direction yields the same result.
 
 ### Index conventions and the shift helper
 
 The 7-index recursion has too many boundary conditions to write as explicit `if` branches per term. The pattern is also regular: in each term only one or two indices are shifted. `shift_NAI({axis: delta, ...})` takes the current loop indices, applies the requested shifts, and returns 0 automatically if any index would go negative. This keeps each recursion term readable as a direct transcription of the OS formula. 
 
-[Obara & Saika, 1986]
+*Source: [S. Obara and A. Saika, J. Chem. Phys 84, 3963 (1986)](http://aip.scitation.org/doi/abs/10.1063/1.450106)*
 
 
-## 9. Electron repulsion integrals — `get_ERIs` (`integral_solvers.py`)
+## 9. Electron repulsion integrals: `get_ERIs` (`integral_solvers.py`)
 
 ### Definition
 
@@ -404,7 +400,7 @@ Seeded on the Boys function with argument $T = \rho |\mathbf{P}-\mathbf{Q}|^2$:
 
 with prefactor $\text{ERI}_{\text{base}} = 2\sqrt{\rho/\pi} S_{\text{base}}^{(ab)} S_{\text{base}}^{(cd)}$, the product of both pairs' Gaussian prefactors. As in NAI, the code only reads the final integral, the $m=0$ case: `ERI_raw[..., 0]`.
 
-### The recursion — stepping to fill the table
+### The OS recursion
 
 Stepping up the $x$-index on center A has the following recursion:
 
@@ -429,4 +425,4 @@ All twelve spatial directions follow the same pattern with the appropriate cente
 
 `swap_ERI({axis: delta, ...})` is the 13-index analog of `shift_NAI`: same shift-and-bounds-check pattern, with the axis map now spanning all twelve spatial indices $`(a_x,a_y,a_z,b_x,b_y,b_z,c_x,c_y,c_z,d_x,d_y,d_z)`$ plus $m$. This keeps the twelve step-up branches readable.
 
-[Obara & Saika, 1986]
+*Source: [S. Obara and A. Saika, J. Chem. Phys 84, 3963 (1986)](http://aip.scitation.org/doi/abs/10.1063/1.450106)*

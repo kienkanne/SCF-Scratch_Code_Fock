@@ -31,7 +31,6 @@ temp/
 scratch/
 artifacts/
 *.tmp
-*log*
 
 # Build artifacts
 

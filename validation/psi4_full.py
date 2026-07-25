@@ -1,10 +1,22 @@
 import time
+import sys
+import logging
+from pathlib import Path
+
 import numpy as np
 import psi4
 
 from scratch_code_fock.mol_basis_builder import Molecule
 from scratch_code_fock.matrix_builders import build_S_T_V, build_ERI
 from scratch_code_fock.roothan_solver import roothan_solver
+
+
+logger = logging.Logger("psi4_full")
+
+log_path = Path(__file__).parent.resolve() / "psi4_full.log"
+
+logger.addHandler(logging.FileHandler(log_path, mode='w'))
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
 def my_full_pipeline(xyz_str, basis_name):
@@ -53,7 +65,7 @@ def compare(name, a, b):
     max_err = np.max(np.abs(a - b))
     rms_err = np.sqrt(np.mean((a - b) ** 2))
 
-    print(f"Check {name:8} | Allclose: {str(allclose):5} | Max error: {max_err:.3e} | RMS error: {rms_err:.3e}")
+    logger.info(f"Check {name:8} | Allclose: {str(allclose):5} | Max error: {max_err:.3e} | RMS error: {rms_err:.3e}")
 
 
 def main():
@@ -63,12 +75,13 @@ def main():
     H    0.000000    0.934000   -0.582000
     H    0.000000   -0.934000   -0.582000
     """
+
     basis_names = ["sto-3g", "6-31g", "6-31g**", "cc-pvdz"]
 
     for basis_name in basis_names:
-        print ("=" * 30)
-        print (f"Testing basis set {basis_name}")
-        print ("=" * 30)
+        logger.info("=" * 30)
+        logger.info(f"Testing basis set {basis_name}")
+        logger.info("=" * 30)
 
         start_time = time.perf_counter()
 
@@ -77,7 +90,7 @@ def main():
         end_time = time.perf_counter()
         execution_time = end_time - start_time
 
-        print(f"My implementation runtime: {execution_time:.6f} seconds")
+        logger.info(f"My implementation runtime: {execution_time:.6f} seconds")
 
         start_time = time.perf_counter()
 
@@ -86,10 +99,10 @@ def main():
         end_time = time.perf_counter()
         execution_time = end_time - start_time
 
-        print(f"Psi4 runtime: {execution_time:.6f} seconds")
+        logger.info(f"Psi4 runtime: {execution_time:.6f} seconds")
 
-        print (f"My SCF energy:   {my_scf_energy}")
-        print (f"Psi4 SCF energy: {psi4_scf_energy}")
+        logger.info(f"My SCF energy:   {my_scf_energy}")
+        logger.info(f"Psi4 SCF energy: {psi4_scf_energy}")
 
         outputs = {
             "Energy": (my_scf_energy, psi4_scf_energy),

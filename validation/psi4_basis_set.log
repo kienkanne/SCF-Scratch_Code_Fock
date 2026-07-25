@@ -1,0 +1,48 @@
+==================================================
+Testing sto-3g ...
+==================================================
+Psi4 total primitives
+24
+My total primitives
+24
+Basis set sto-3g passed !!!
+==================================================
+Testing 6-31g ...
+==================================================
+Psi4 total primitives
+36
+My total primitives
+36
+
+[MISMATCH] Shell 0 (S), Primitive 0 Coefficient mismatch!
+Psi4: 0.5363343823425216
+Mine: 0.5363451868395834
+Basis set 6-31g failed completely.
+==================================================
+Testing 6-31g** ...
+==================================================
+Psi4 total primitives
+40
+My total primitives
+40
+
+[MISMATCH] Shell 0 (S), Primitive 0 Coefficient mismatch!
+Psi4: 0.5363343823425216
+Mine: 0.5363451868395834
+Basis set 6-31g** failed completely.
+==================================================
+Testing cc-pvdz ...
+==================================================
+Psi4 total primitives
+54
+My total primitives
+90
+
+[MISMATCH] Shell 0 (S) Primitive Count mismatch!
+Atom Index: 0
+Psi4 primitive count: 8
+My primitive count: 9
+Psi4 raw exponents: [6665.0, 1000.0, 228.0, 64.71, 21.06, 7.495, 2.797, 0.5215]
+My raw exponents: [6.665e+03 1.000e+03 2.280e+02 6.471e+01 2.106e+01 7.495e+00 2.797e+00
+ 5.215e-01 1.596e-01]
+Basis set cc-pvdz failed completely.

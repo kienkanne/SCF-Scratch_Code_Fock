@@ -162,10 +162,6 @@ class Molecule:
                     am = int(am)
                     coefficients = np.array([float(c) for c in coefficients])
 
-                    mask = np.abs(exponents) > 1e-6
-                    exponents = exponents[mask]
-                    coefficients = coefficients[mask]
-
                     if len(exponents) == 0:
                         continue
 

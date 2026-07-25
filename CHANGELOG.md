@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
+## [2026-07-25]
+
+### Added
+- Basis set validation results against Psi4
+- `SUPPLEMENTS.pdf` to ensure correct LaTeX rendering
+
+### Changed
+- Updated full validation pipeline against Psi4
+
 ## [2026-07-20]
 
 Reorganize repository with proper structure

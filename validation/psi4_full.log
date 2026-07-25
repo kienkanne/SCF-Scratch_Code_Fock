@@ -1,8 +1,8 @@
 ==============================
 Testing basis set sto-3g
 ==============================
-My implementation runtime: 4.002951 seconds
-Psi4 runtime: 0.173075 seconds
+My implementation runtime: 3.975116 seconds
+Psi4 runtime: 0.173184 seconds
 My SCF energy:   -112.3538011543945
 Psi4 SCF energy: -112.35380130332987
 Check Energy   | Allclose: True  | Max error: 1.489e-07 | RMS error: 1.489e-07
@@ -14,8 +14,8 @@ Check I        | Allclose: True  | Max error: 3.471e-07 | RMS error: 6.610e-09
 ==============================
 Testing basis set 6-31g
 ==============================
-My implementation runtime: 13.957974 seconds
-Psi4 runtime: 0.154621 seconds
+My implementation runtime: 13.882153 seconds
+Psi4 runtime: 0.151734 seconds
 My SCF energy:   -113.80784752406073
 Psi4 SCF energy: -113.80784764864008
 Check Energy   | Allclose: True  | Max error: 1.246e-07 | RMS error: 1.246e-07
@@ -27,8 +27,8 @@ Check I        | Allclose: False | Max error: 3.591e-07 | RMS error: 1.104e-08
 ==============================
 Testing basis set 6-31g**
 ==============================
-My implementation runtime: 68.196149 seconds
-Psi4 runtime: 0.289124 seconds
+My implementation runtime: 67.096341 seconds
+Psi4 runtime: 0.275352 seconds
 My SCF energy:   -113.8690053559351
 Psi4 SCF energy: -113.8690053959647
 Check Energy   | Allclose: True  | Max error: 4.003e-08 | RMS error: 4.003e-08
@@ -40,8 +40,8 @@ Check I        | Allclose: False | Max error: 3.591e-07 | RMS error: 5.749e-09
 ==============================
 Testing basis set cc-pvdz
 ==============================
-My implementation runtime: 696.266624 seconds
-Psi4 runtime: 0.442885 seconds
+My implementation runtime: 698.132989 seconds
+Psi4 runtime: 0.441262 seconds
 My SCF energy:   -113.87679696901616
 Psi4 SCF energy: -113.8767969124259
 Check Energy   | Allclose: True  | Max error: 5.659e-08 | RMS error: 5.659e-08
