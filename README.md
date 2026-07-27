@@ -8,9 +8,10 @@ A restricted Hartree-Fock (RHF) Self-Consistent-Field (SCF) engine, built entire
 ## Dependencies
 
 ```
-numpy
+psi4                   # Validation benchmark
+numpy                  # Main architecture
 scipy                  # Boys function, via scipy.special.gamma / gammainc
-basis_set_exchange     # basis set data (exponents, contraction coefficients)
+basis_set_exchange     # Basis set data (exponents, contraction coefficients)
 ```
 
 ## Usage
