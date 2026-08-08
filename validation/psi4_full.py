@@ -42,7 +42,9 @@ def psi4_full_pipeline(xyz_str, basis_name):
     psi4.set_memory(int(5e8))
     psi4.set_options({'basis': basis_name, 'puream': 0, 'scf_type': 'pk'})
 
-    mol = psi4.core.Molecule.from_string(xyz_str)
+    xyz_str_no_sym = xyz_str + "\n    symmetry c1\n    no_reorient\n    no_com"
+
+    mol = psi4.core.Molecule.from_string(xyz_str_no_sym)
     mol.update_geometry()
 
     wfn = psi4.core.Wavefunction.build(mol, psi4.core.get_global_option('basis'))
@@ -119,3 +121,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
