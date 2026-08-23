@@ -18,28 +18,46 @@ logger.addHandler(logging.FileHandler(log_path, mode='w'))
 logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
-def my_full_pipeline(xyz_str, basis_name):
+def my_full_pipeline(xyz_str, basis_name, type):
     mol = Molecule(xyz_str)
 
     wfn = WaveFunction(mol, basis_name)
 
     S, T, V, I = wfn.calc_integrals()
-    scf_energy = wfn.calc_energy(verbose=0)
-    mulliken_charges = wfn.calc_mulliken_charges()
 
-    return scf_energy, mulliken_charges, S, T, V, I
+    if type == "rhf":
+        E0 = wfn.calc_rhf_energy(verbose=0)
+    elif type == "uhf":
+        E0 = wfn.calc_uhf_energy(verbose=0)
+    elif type == "mp2":
+        E0 = wfn.calc_mp2_energy(verbose=0)
+    else:
+        raise ValueError(f"Invalid type: {type}")
+
+    MC = wfn.calc_mulliken_charges()
+    
+    return {"E0" :E0, "MC": MC, "S": S, "T": T, "V": V, "I": I}
 
 
-def psi4_full_pipeline(xyz_str, basis_name):
+def psi4_full_pipeline(xyz_str, basis_name, type):
     psi4.core.clean()
     psi4.core.clean_options()
     psi4.core.clean_variables()
 
     psi4.core.set_output_file('output.dat', False)
     psi4.set_memory(int(5e8))
-    psi4.set_options({'basis': basis_name, 'puream': 0, 'scf_type': 'pk',
-                      'reference': 'uhf'
-                      })
+    psi4.set_options({'basis': basis_name, 'puream': 0, 'scf_type': 'pk'})
+
+    if type == "rhf":
+        calc = "scf"
+    elif type == "uhf":
+        psi4.set_options({'reference': 'uhf'})
+        calc = "scf"
+    elif type == "mp2":
+        psi4.set_options({'mp2_type': 'conv'})
+        calc = "mp2"
+    else:
+        raise ValueError(f"Invalid type: {type}")
 
     xyz_str_no_sym = xyz_str + "\n    symmetry c1\n    no_reorient\n    no_com\n"
 
@@ -54,11 +72,11 @@ def psi4_full_pipeline(xyz_str, basis_name):
     V = np.asarray(mints.ao_potential())
     I = np.asarray(mints.ao_eri())
 
-    scf_energy, wfn = psi4.energy('SCF', molecule=mol, return_wfn=True)
+    E0, wfn = psi4.energy(calc, molecule=mol, return_wfn=True)
     psi4.oeprop(wfn, 'MULLIKEN_CHARGES')
 
-    mulliken_charges = np.array(wfn.atomic_point_charges())
-    return scf_energy, mulliken_charges, S, T, V, I
+    MC = np.array(wfn.atomic_point_charges())
+    return {"E0" :E0, "MC": MC, "S": S, "T": T, "V": V, "I": I}
 
 
 def compare(name, a, b):
@@ -69,57 +87,56 @@ def compare(name, a, b):
     logger.info(f"Check {name:8} | Allclose: {str(allclose):5} | Max error: {max_err:.3e} | RMS error: {rms_err:.3e}")
 
 
-def main():
-    formaldehyde_xyz = """
-1 2
+def validate(basis_name, xyz, type, name):
+    logger.info("=" * 30)
+    logger.info(f"Test: {name}; Basis set {basis_name}")
+    logger.info("=" * 30)
+
+    start_time = time.perf_counter()
+
+    my_result = my_full_pipeline(xyz, basis_name, type)
+
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+
+    logger.info(f"My implementation runtime: {execution_time:.6f} seconds")
+
+    start_time = time.perf_counter()
+
+    psi4_result = psi4_full_pipeline(xyz, basis_name, type)
+
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+
+    logger.info(f"Psi4 runtime: {execution_time:.6f} seconds")
+
+    logger.info(f"My SCF energy:   {my_result['E0']}")
+    logger.info(f"Psi4 SCF energy: {psi4_result['E0']}")
+
+    for quantity in my_result.keys():
+        compare(quantity, my_result[quantity], psi4_result[quantity])
+
+
+def create_fm_xyz(charge, mult):
+    return f"""
+{charge} {mult}
 
 C    0.000000    0.000000    0.000000
 O    0.000000    0.000000    1.203000
 H    0.000000    0.934000   -0.582000
 H    0.000000   -0.934000   -0.582000
-    """
+"""
 
+def main():
     basis_names = ["sto-3g", "6-31g"]
 
     for basis_name in basis_names:
-        logger.info("=" * 30)
-        logger.info(f"Testing basis set {basis_name}")
-        logger.info("=" * 30)
-
-        start_time = time.perf_counter()
-
-        my_scf_energy, my_mulliken_charges, my_S, my_T, my_V, my_I = my_full_pipeline(formaldehyde_xyz, basis_name)
-
-        end_time = time.perf_counter()
-        execution_time = end_time - start_time
-
-        logger.info(f"My implementation runtime: {execution_time:.6f} seconds")
-
-        start_time = time.perf_counter()
-
-        psi4_scf_energy, psi4_mulliken_charges, psi4_S, psi4_T, psi4_V, psi4_I = psi4_full_pipeline(formaldehyde_xyz, basis_name)
-
-        end_time = time.perf_counter()
-        execution_time = end_time - start_time
-
-        logger.info(f"Psi4 runtime: {execution_time:.6f} seconds")
-
-        logger.info(f"My SCF energy:   {my_scf_energy}")
-        logger.info(f"Psi4 SCF energy: {psi4_scf_energy}")
-
-        outputs = {
-            "Energy": (my_scf_energy, psi4_scf_energy),
-            "Mulliken": (my_mulliken_charges, psi4_mulliken_charges),
-            "S": (my_S, psi4_S),
-            "T": (my_T, psi4_T),
-            "V": (my_V, psi4_V),
-            "I": (my_I, psi4_I)
-        }
-
-        for name, (my_data, psi4_data) in outputs.items():
-            compare(name, my_data, psi4_data)
+        validate(basis_name, create_fm_xyz(0, 1), "rhf", "RHF")
+        validate(basis_name, create_fm_xyz(0, 1), "uhf", "UHF singlet")
+        validate(basis_name, create_fm_xyz(0, 3), "uhf", "UHF triplet")
+        validate(basis_name, create_fm_xyz(1, 2), "uhf", "UHF charged doublet")
+        validate(basis_name, create_fm_xyz(0, 1), "mp2", "MP2")
 
 
 if __name__ == "__main__":
     main()
-    

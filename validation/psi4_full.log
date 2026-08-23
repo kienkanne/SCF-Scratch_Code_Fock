@@ -1,25 +1,129 @@
 ==============================
-Testing basis set sto-3g
+Test: RHF; Basis set sto-3g
 ==============================
-My implementation runtime: 4.398009 seconds
-Psi4 runtime: 0.986395 seconds
-My SCF energy:   -112.08283305635284
-Psi4 SCF energy: -112.08283319970428
-Check Energy   | Allclose: True  | Max error: 1.434e-07 | RMS error: 1.434e-07
-Check Mulliken | Allclose: True  | Max error: 3.355e-07 | RMS error: 2.104e-07
+My implementation runtime: 3.978690 seconds
+Psi4 runtime: 0.171574 seconds
+My SCF energy:   -112.3538011543945
+Psi4 SCF energy: -112.3538013033321
+Check E0       | Allclose: True  | Max error: 1.489e-07 | RMS error: 1.489e-07
+Check MC       | Allclose: True  | Max error: 4.469e-08 | RMS error: 4.012e-08
 Check S        | Allclose: True  | Max error: 5.931e-08 | RMS error: 1.700e-08
 Check T        | Allclose: True  | Max error: 4.119e-06 | RMS error: 3.439e-07
 Check V        | Allclose: True  | Max error: 4.509e-06 | RMS error: 4.542e-07
 Check I        | Allclose: True  | Max error: 3.471e-07 | RMS error: 6.610e-09
 ==============================
-Testing basis set 6-31g
+Test: UHF singlet; Basis set sto-3g
 ==============================
-My implementation runtime: 15.306967 seconds
-Psi4 runtime: 0.487536 seconds
+My implementation runtime: 3.934236 seconds
+Psi4 runtime: 0.103629 seconds
+My SCF energy:   -112.35380115439453
+Psi4 SCF energy: -112.35380130333212
+Check E0       | Allclose: True  | Max error: 1.489e-07 | RMS error: 1.489e-07
+Check MC       | Allclose: True  | Max error: 4.469e-08 | RMS error: 4.012e-08
+Check S        | Allclose: True  | Max error: 5.931e-08 | RMS error: 1.700e-08
+Check T        | Allclose: True  | Max error: 4.119e-06 | RMS error: 3.439e-07
+Check V        | Allclose: True  | Max error: 4.509e-06 | RMS error: 4.542e-07
+Check I        | Allclose: True  | Max error: 3.471e-07 | RMS error: 6.610e-09
+==============================
+Test: UHF triplet; Basis set sto-3g
+==============================
+My implementation runtime: 3.888807 seconds
+Psi4 runtime: 0.106920 seconds
+My SCF energy:   -112.2769212183995
+Psi4 SCF energy: -112.27692142767214
+Check E0       | Allclose: True  | Max error: 2.093e-07 | RMS error: 2.093e-07
+Check MC       | Allclose: False | Max error: 2.056e-06 | RMS error: 1.369e-06
+Check S        | Allclose: True  | Max error: 5.931e-08 | RMS error: 1.700e-08
+Check T        | Allclose: True  | Max error: 4.119e-06 | RMS error: 3.439e-07
+Check V        | Allclose: True  | Max error: 4.509e-06 | RMS error: 4.542e-07
+Check I        | Allclose: True  | Max error: 3.471e-07 | RMS error: 6.610e-09
+==============================
+Test: UHF charged doublet; Basis set sto-3g
+==============================
+My implementation runtime: 3.891184 seconds
+Psi4 runtime: 0.112899 seconds
+My SCF energy:   -112.08283305635284
+Psi4 SCF energy: -112.08283319970428
+Check E0       | Allclose: True  | Max error: 1.434e-07 | RMS error: 1.434e-07
+Check MC       | Allclose: True  | Max error: 3.355e-07 | RMS error: 2.104e-07
+Check S        | Allclose: True  | Max error: 5.931e-08 | RMS error: 1.700e-08
+Check T        | Allclose: True  | Max error: 4.119e-06 | RMS error: 3.439e-07
+Check V        | Allclose: True  | Max error: 4.509e-06 | RMS error: 4.542e-07
+Check I        | Allclose: True  | Max error: 3.471e-07 | RMS error: 6.610e-09
+==============================
+Test: MP2; Basis set sto-3g
+==============================
+My implementation runtime: 3.920712 seconds
+Psi4 runtime: 0.113360 seconds
+My SCF energy:   -112.4692842736599
+Psi4 SCF energy: -112.46928444103203
+Check E0       | Allclose: True  | Max error: 1.674e-07 | RMS error: 1.674e-07
+Check MC       | Allclose: True  | Max error: 1.133e-07 | RMS error: 6.791e-08
+Check S        | Allclose: True  | Max error: 5.931e-08 | RMS error: 1.700e-08
+Check T        | Allclose: True  | Max error: 4.119e-06 | RMS error: 3.439e-07
+Check V        | Allclose: True  | Max error: 4.509e-06 | RMS error: 4.542e-07
+Check I        | Allclose: True  | Max error: 3.471e-07 | RMS error: 6.610e-09
+==============================
+Test: RHF; Basis set 6-31g
+==============================
+My implementation runtime: 14.233617 seconds
+Psi4 runtime: 0.150470 seconds
+My SCF energy:   -113.80784752406073
+Psi4 SCF energy: -113.80784764816663
+Check E0       | Allclose: True  | Max error: 1.241e-07 | RMS error: 1.241e-07
+Check MC       | Allclose: True  | Max error: 9.098e-07 | RMS error: 6.148e-07
+Check S        | Allclose: True  | Max error: 2.311e-07 | RMS error: 4.062e-08
+Check T        | Allclose: True  | Max error: 7.299e-06 | RMS error: 4.066e-07
+Check V        | Allclose: True  | Max error: 7.719e-06 | RMS error: 6.405e-07
+Check I        | Allclose: False | Max error: 3.591e-07 | RMS error: 1.104e-08
+==============================
+Test: UHF singlet; Basis set 6-31g
+==============================
+My implementation runtime: 14.132052 seconds
+Psi4 runtime: 0.152232 seconds
+My SCF energy:   -113.80784752406062
+Psi4 SCF energy: -113.80784764816659
+Check E0       | Allclose: True  | Max error: 1.241e-07 | RMS error: 1.241e-07
+Check MC       | Allclose: True  | Max error: 9.098e-07 | RMS error: 6.148e-07
+Check S        | Allclose: True  | Max error: 2.311e-07 | RMS error: 4.062e-08
+Check T        | Allclose: True  | Max error: 7.299e-06 | RMS error: 4.066e-07
+Check V        | Allclose: True  | Max error: 7.719e-06 | RMS error: 6.405e-07
+Check I        | Allclose: False | Max error: 3.591e-07 | RMS error: 1.104e-08
+==============================
+Test: UHF triplet; Basis set 6-31g
+==============================
+My implementation runtime: 14.117136 seconds
+Psi4 runtime: 0.159386 seconds
+My SCF energy:   -113.72244963650913
+Psi4 SCF energy: -113.72244962926524
+Check E0       | Allclose: True  | Max error: 7.244e-09 | RMS error: 7.244e-09
+Check MC       | Allclose: True  | Max error: 1.186e-06 | RMS error: 8.962e-07
+Check S        | Allclose: True  | Max error: 2.311e-07 | RMS error: 4.062e-08
+Check T        | Allclose: True  | Max error: 7.299e-06 | RMS error: 4.066e-07
+Check V        | Allclose: True  | Max error: 7.719e-06 | RMS error: 6.405e-07
+Check I        | Allclose: False | Max error: 3.591e-07 | RMS error: 1.104e-08
+==============================
+Test: UHF charged doublet; Basis set 6-31g
+==============================
+My implementation runtime: 14.133804 seconds
+Psi4 runtime: 0.163128 seconds
 My SCF energy:   -113.46014105452998
 Psi4 SCF energy: -113.46014107846895
-Check Energy   | Allclose: True  | Max error: 2.394e-08 | RMS error: 2.394e-08
-Check Mulliken | Allclose: False | Max error: 2.356e-06 | RMS error: 1.528e-06
+Check E0       | Allclose: True  | Max error: 2.394e-08 | RMS error: 2.394e-08
+Check MC       | Allclose: False | Max error: 2.356e-06 | RMS error: 1.528e-06
+Check S        | Allclose: True  | Max error: 2.311e-07 | RMS error: 4.062e-08
+Check T        | Allclose: True  | Max error: 7.299e-06 | RMS error: 4.066e-07
+Check V        | Allclose: True  | Max error: 7.719e-06 | RMS error: 6.405e-07
+Check I        | Allclose: False | Max error: 3.591e-07 | RMS error: 1.104e-08
+==============================
+Test: MP2; Basis set 6-31g
+==============================
+My implementation runtime: 14.058164 seconds
+Psi4 runtime: 0.188552 seconds
+My SCF energy:   -114.02694676588342
+Psi4 SCF energy: -114.02694691145781
+Check E0       | Allclose: True  | Max error: 1.456e-07 | RMS error: 1.456e-07
+Check MC       | Allclose: True  | Max error: 1.927e-07 | RMS error: 1.694e-07
 Check S        | Allclose: True  | Max error: 2.311e-07 | RMS error: 4.062e-08
 Check T        | Allclose: True  | Max error: 7.299e-06 | RMS error: 4.066e-07
 Check V        | Allclose: True  | Max error: 7.719e-06 | RMS error: 6.405e-07

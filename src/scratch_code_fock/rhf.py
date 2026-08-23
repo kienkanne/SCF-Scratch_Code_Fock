@@ -1,6 +1,6 @@
 import numpy as np
 from scratch_code_fock.mol_basis_builder import Molecule
-from scratch_code_fock.scf_utils import diis, sym_ortho, solve_F_get_D
+from scratch_code_fock.scf_utils import diis, sym_ortho, solve_F
 
 
 def rhf(mol: Molecule, S, T, V, I,
@@ -24,7 +24,7 @@ def rhf(mol: Molecule, S, T, V, I,
             print ("DIIS turned on!")
 
         # 1. Diagonalize current Fock matrix F
-        D = solve_F_get_D(F, X, ndocc)
+        eps, C, D = solve_F(F, X, ndocc)
 
         # 3. Compute energy
         E0 = np.sum(D * (H + F)) + V_nn
@@ -52,7 +52,7 @@ def rhf(mol: Molecule, S, T, V, I,
                 print("SCF Converged!")
                 print('Final RHF Energy: %.10f a.u.' % E0)
             
-            return E0, D
+            return {"E0": E0, "eps": eps, "C": C, "D": D}
 
         E0_last = E0
 

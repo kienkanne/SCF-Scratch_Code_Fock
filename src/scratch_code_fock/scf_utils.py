@@ -39,9 +39,9 @@ def sym_ortho(S):
     return X
 
 
-def solve_F_get_D(F, X, n_occ):
+def solve_F(F, X, n_occ):
     F_p = X.T @ F @ X
-    e, C_p = np.linalg.eigh(F_p)
+    eps, C_p = np.linalg.eigh(F_p)
 
     # C_p.shape = (K: original AO, K: new AO)
     # Truncate C to only keep occupied columns
@@ -50,4 +50,4 @@ def solve_F_get_D(F, X, n_occ):
 
     # 2. Compute new Density matrix D
     D = C_occ @ C_occ.T
-    return D
+    return eps, C, D

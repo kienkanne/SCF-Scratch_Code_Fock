@@ -4,6 +4,7 @@ from scratch_code_fock.mol_basis_builder import Molecule
 from scratch_code_fock.matrix_builders import build_S_T_V, build_ERI
 from scratch_code_fock.rhf import rhf
 from scratch_code_fock.uhf import uhf
+from scratch_code_fock.mp2 import transform_MO, calc_MP2_E
 import numpy as np
 
 
@@ -13,32 +14,56 @@ class WaveFunction():
         self.basis = mol.build_basis(basis_name)
         self.S = self.T = self.V = self.I = None
 
+
     def calc_integrals(self):
         self.S, self.T, self.V = build_S_T_V(self.mol, self.basis)
         self.I = build_ERI(self.mol, self.basis)
 
         return self.S, self.T, self.V, self.I
 
-    def calc_energy(self, **kwargs):
+
+    def _check_integrals(self):
         if self.S is None or self.T is None or self.V is None:
             self.S, self.T, self.V = build_S_T_V(self.mol, self.basis)
         if self.I is None:
             self.I = build_ERI(self.mol, self.basis)
 
-        if self.mol.multiplicity != 1:
-            self.energy, self.Da, self.Db = uhf(self.mol, self.S, self.T, self.V, self.I, **kwargs)
-            self.D = 0.5 * (self.Da + self.Db)
-        else:
-            self.energy, self.D = rhf(self.mol, self.S, self.T, self.V, self.I, **kwargs)
 
-        return self.energy
+    def calc_rhf_energy(self, **kwargs):
+        self._check_integrals()
+
+        if self.mol.multiplicity != 1:
+            raise RuntimeError("Cannot calculate RHF with multiplicity other than 1!")
+        self.result = rhf(self.mol, self.S, self.T, self.V, self.I, **kwargs)
+
+        return self.result["E0"]
+
+
+    def calc_uhf_energy(self, **kwargs):
+        self._check_integrals()
+
+        self.result = uhf(self.mol, self.S, self.T, self.V, self.I, **kwargs)
+        self.result["D"] = 0.5 * (self.result["Da"] + self.result["Db"])
+
+        return self.result["E0"]
+
+
+    def calc_mp2_energy(self, **kwargs):
+        if getattr(self, "result", None) is None:
+            self.result = rhf(self.mol, self.S, self.T, self.V, self.I, **kwargs)
+            
+        I_mo = transform_MO(self.I, self.result["C"], self.mol.ndocc)
+        MP2_E = calc_MP2_E(I_mo, self.mol.ndocc, self.result["eps"], self.result["E0"])
+
+        return MP2_E
+
 
     def calc_mulliken_charges(self):
         from scratch_code_fock.mol_basis_builder import ATOMIC_NUMBERS
-        if getattr(self, "D", None) is None:
-            self.calc_energy(verbose=0)
+        if getattr(self, "result", None) is None:
+            raise RuntimeError("Energy has not been calculated!")
 
-        P = 2.0 * (self.D @ self.S)
+        P = 2.0 * (self.result["D"] @ self.S)
 
         ao_populations = np.diag(P)
 
