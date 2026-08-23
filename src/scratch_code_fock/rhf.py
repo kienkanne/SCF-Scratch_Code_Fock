@@ -3,10 +3,9 @@ from scratch_code_fock.mol_basis_builder import Molecule
 from scratch_code_fock.scf_utils import diis, sym_ortho, solve_F_get_D
 
 
-
 def rhf(mol: Molecule, S, T, V, I,
                    max_iter=100, e_conv=1e-6, startup_iter=5, grad_max=1e-6, grad_rms=1e-6, verbose=0):
-    # TODO: `return_mulliken` should be separated
+
     ndocc = mol.ndocc
     V_nn = mol.V_nn
 
@@ -20,10 +19,7 @@ def rhf(mol: Molecule, S, T, V, I,
     F_list = []
     err_list = []
 
-    for i in range(1, max_iter+1):
-        if (i == max_iter + 1):
-            raise Exception("Maximum number of SCF iterations exceeded.")
-        
+    for i in range(1, max_iter+1):        
         if (i == startup_iter + 1) and verbose >= 2:
             print ("DIIS turned on!")
 
@@ -48,7 +44,7 @@ def rhf(mol: Molecule, S, T, V, I,
         rms_error = np.sqrt(np.mean(err_vector**2))
 
         if verbose >=2:
-            print(f"SCF Iteration {i:3d}: | Energy = {E0:4.16f} | dE = {dE: 1.5E} | Max_E = {max_error: 1.5E} | RMS_E = {rms_error: 1.5E}")
+            print(f"SCF Iteration {i:3d}: | Energy = {E0:.8f} | dE = {dE: 1.5E} | Max_E = {max_error: 1.5E} | RMS_E = {rms_error: 1.5E}")
 
         # 5. Convergence check
         if np.abs(dE) < e_conv and max_error < grad_max and rms_error < grad_rms:
@@ -70,3 +66,5 @@ def rhf(mol: Molecule, S, T, V, I,
             
             # Extrapolate F
             F = np.einsum('i,ijk->jk', coeffs, np.array(F_list[history]))
+
+    raise Exception("Maximum number of SCF iterations exceeded.")

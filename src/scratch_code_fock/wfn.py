@@ -2,7 +2,8 @@ from tabnanny import verbose
 
 from scratch_code_fock.mol_basis_builder import Molecule
 from scratch_code_fock.matrix_builders import build_S_T_V, build_ERI
-from scratch_code_fock.roothan_solver import rhf
+from scratch_code_fock.rhf import rhf
+from scratch_code_fock.uhf import uhf
 import numpy as np
 
 
@@ -18,19 +19,24 @@ class WaveFunction():
 
         return self.S, self.T, self.V, self.I
 
-    def calc_rhf_energy(self, **kwargs):
+    def calc_energy(self, **kwargs):
         if self.S is None or self.T is None or self.V is None:
             self.S, self.T, self.V = build_S_T_V(self.mol, self.basis)
         if self.I is None:
             self.I = build_ERI(self.mol, self.basis)
 
-        self.energy, self.D = rhf(self.mol, self.S, self.T, self.V, self.I, **kwargs)
+        if self.mol.multiplicity != 1:
+            self.energy, self.Da, self.Db = uhf(self.mol, self.S, self.T, self.V, self.I, **kwargs)
+            self.D = 0.5 * (self.Da + self.Db)
+        else:
+            self.energy, self.D = rhf(self.mol, self.S, self.T, self.V, self.I, **kwargs)
+
         return self.energy
 
     def calc_mulliken_charges(self):
         from scratch_code_fock.mol_basis_builder import ATOMIC_NUMBERS
         if getattr(self, "D", None) is None:
-            self.calc_rhf_energy(verbose=0)
+            self.calc_energy(verbose=0)
 
         P = 2.0 * (self.D @ self.S)
 

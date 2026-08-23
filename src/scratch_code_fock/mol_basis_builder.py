@@ -79,39 +79,49 @@ class Basis:
 
 class Molecule:
     def __init__(self, xyz_string: str):
-        lines = xyz_string.strip().split('\n')
+        lines = [line.strip() for line in xyz_string.strip().split('\n') if line.strip()]
         self.atoms = []
         self.coords = []
         self.charge = None
         self.multiplicity = None
         
-        # Handle optional header lines in standard XYZ files
         start_idx = 0
-        if len(lines) > 0 and len(lines[0].split()) == 1:  # First line is atom count
-            start_idx = 2 if len(lines) > 1 else 1
+        if len(lines) > 0:
+            first_line_parts = lines[0].split()
             
-            # Parse charge and multiplicity from the comment line (line 1)
-            if len(lines) > 1:
-                parts = lines[1].split()
-                if len(parts) >= 2:
-                    try:
-                        self.charge = int(parts[0])
-                        self.multiplicity = int(parts[1])
-                    except ValueError:
-                        pass
-            
+            # Case 1: First line is charge and multiplicity (e.g., "0 1")
+            if len(first_line_parts) == 2:
+                try:
+                    self.charge = int(first_line_parts[0])
+                    self.multiplicity = int(first_line_parts[1])
+                    start_idx = 1
+                except ValueError:
+                    pass
+                    
+            # Case 2: Standard XYZ format where line 0 is atom count, line 1 is charge/mult
+            elif len(first_line_parts) == 1:
+                start_idx = 2 if len(lines) > 1 else 1
+                if len(lines) > 1:
+                    parts = lines[1].split()
+                    if len(parts) >= 2:
+                        try:
+                            self.charge = int(parts[0])
+                            self.multiplicity = int(parts[1])
+                        except ValueError:
+                            pass
+                            
+        # Parse atoms and coordinates
         for line in lines[start_idx:]:
             parts = line.split()
-            if not parts: 
-                continue
+            if len(parts) < 4: 
+                continue  # Skip any empty or malformed lines
             self.atoms.append(parts[0])
             self.coords.append([float(x) for x in parts[1:4]])
         
         self.coords = np.array(self.coords)
+        self.n_electrons = sum(ATOMIC_NUMBERS[atom.upper()] for atom in self.atoms) - self.charge
 
-        self.n_electrons = sum(ATOMIC_NUMBERS[atom.upper()] for atom in self.atoms) + self.charge
-
-        self.n_unpaired = (self.multiplicity - 1) / 2
+        self.n_unpaired = self.multiplicity - 1
         if (self.n_electrons - self.n_unpaired) % 2 != 0:
             raise ValueError(f"Invalid charge and multiplicity. Molecule has {self.n_electrons} electrons and {self.multiplicity} multiplicity")
 

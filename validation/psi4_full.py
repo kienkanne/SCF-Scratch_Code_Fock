@@ -24,7 +24,7 @@ def my_full_pipeline(xyz_str, basis_name):
     wfn = WaveFunction(mol, basis_name)
 
     S, T, V, I = wfn.calc_integrals()
-    scf_energy = wfn.calc_rhf_energy(verbose=0)
+    scf_energy = wfn.calc_energy(verbose=0)
     mulliken_charges = wfn.calc_mulliken_charges()
 
     return scf_energy, mulliken_charges, S, T, V, I
@@ -37,9 +37,11 @@ def psi4_full_pipeline(xyz_str, basis_name):
 
     psi4.core.set_output_file('output.dat', False)
     psi4.set_memory(int(5e8))
-    psi4.set_options({'basis': basis_name, 'puream': 0, 'scf_type': 'pk'})
+    psi4.set_options({'basis': basis_name, 'puream': 0, 'scf_type': 'pk',
+                      'reference': 'uhf'
+                      })
 
-    xyz_str_no_sym = xyz_str + "\n    symmetry c1\n    no_reorient\n    no_com"
+    xyz_str_no_sym = xyz_str + "\n    symmetry c1\n    no_reorient\n    no_com\n"
 
     mol = psi4.core.Molecule.from_string(xyz_str_no_sym)
     mol.update_geometry()
@@ -69,10 +71,12 @@ def compare(name, a, b):
 
 def main():
     formaldehyde_xyz = """
-    C    0.000000    0.000000    0.000000
-    O    0.000000    0.000000    1.203000
-    H    0.000000    0.934000   -0.582000
-    H    0.000000   -0.934000   -0.582000
+1 2
+
+C    0.000000    0.000000    0.000000
+O    0.000000    0.000000    1.203000
+H    0.000000    0.934000   -0.582000
+H    0.000000   -0.934000   -0.582000
     """
 
     basis_names = ["sto-3g", "6-31g"]
