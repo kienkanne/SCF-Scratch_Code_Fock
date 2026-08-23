@@ -7,8 +7,7 @@ import numpy as np
 import psi4
 
 from scratch_code_fock.mol_basis_builder import Molecule
-from scratch_code_fock.matrix_builders import build_S_T_V, build_ERI
-from scratch_code_fock.roothan_solver import roothan_solver
+from scratch_code_fock.wfn import WaveFunction
 
 
 logger = logging.Logger("psi4_full")
@@ -22,14 +21,12 @@ logger.addHandler(logging.StreamHandler(sys.stdout))
 def my_full_pipeline(xyz_str, basis_name):
     mol = Molecule(xyz_str)
 
-    mol.get_nuclear_repulsion()
+    wfn = WaveFunction(mol, basis_name)
 
-    basis = mol.build_basis(basis_name)
+    S, T, V, I = wfn.calc_integrals()
+    scf_energy = wfn.calc_rhf_energy(verbose=0)
+    mulliken_charges = wfn.calc_mulliken_charges()
 
-    S, T, V = build_S_T_V(mol, basis)
-    I = build_ERI(mol, basis)
-
-    scf_energy, mulliken_charges = roothan_solver(mol, S, T, V, I, basis=basis, return_mulliken=True, verbose=0)
     return scf_energy, mulliken_charges, S, T, V, I
 
 
@@ -78,7 +75,7 @@ def main():
     H    0.000000   -0.934000   -0.582000
     """
 
-    basis_names = ["sto-3g", "6-31g", "6-31g**", "cc-pvdz"]
+    basis_names = ["sto-3g", "6-31g"]
 
     for basis_name in basis_names:
         logger.info("=" * 30)

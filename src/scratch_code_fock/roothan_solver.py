@@ -1,47 +1,16 @@
 import numpy as np
-from scratch_code_fock.mol_basis_builder import Molecule, Basis
+from scratch_code_fock.mol_basis_builder import Molecule
+from scratch_code_fock.scf_utils import diis, sym_ortho, solve_F_get_D
 
 
-def diis(e_list: list) -> np.ndarray:
-    """
-    Takes in a list of np.ndarray objects with matching shapes as error vectors.
-    Construct the DIIS matrix and solve the Pulay equations for the coefficients.
-    Returns a coefficient vector matching the arrays in the list.
-    """
-    size = len(e_list)
 
-    B = np.full((size + 1, size + 1), -1.0)
-    B[-1, -1] = 0.0
-
-    flattened_e = [e.ravel() for e in e_list]
-    e_array = np.vstack(flattened_e)
-
-    # Compute pairwise dot products directly into B
-    B[:size, :size] = e_array @ e_array.T
-
-    rhs = np.zeros(size + 1)
-    rhs[-1] = -1.0
-
-    c = np.linalg.solve(B, rhs)
-    # Return only the coefficients corresponding to the error vectors
-    return c[:size]
-
-
-def roothan_solver(mol: Molecule, S, T, V, I,
-                   max_iter=100, e_conv=1e-6, startup_iter=5, grad_max=1e-6, grad_rms=1e-6, verbose=0,
-                   basis=None, return_mulliken=False):
+def rhf(mol: Molecule, S, T, V, I,
+                   max_iter=100, e_conv=1e-6, startup_iter=5, grad_max=1e-6, grad_rms=1e-6, verbose=0):
     # TODO: `return_mulliken` should be separated
     ndocc = mol.ndocc
     V_nn = mol.V_nn
 
-    # Symmetric orthogonalization
-    # s = U.T @ S @ U
-    # X = S^-0.5 = U @ s^-0.5 @ U.T
-    s, U = np.linalg.eigh(S)
-    s_inv_sqrt = 1.0 / np.sqrt(s)
-    # Reset the inf values to 0
-    s_inv_sqrt[np.isinf(s_inv_sqrt)] = 0.0
-    X = U @ np.diag(s_inv_sqrt) @ U.T
+    X = sym_ortho(S)
 
     H = T + V
     # Initial guess, no electron interaction
@@ -59,16 +28,7 @@ def roothan_solver(mol: Molecule, S, T, V, I,
             print ("DIIS turned on!")
 
         # 1. Diagonalize current Fock matrix F
-        F_p = X.T @ F @ X
-        e, C_p = np.linalg.eigh(F_p)
-
-        # C_p.shape = (K: original AO, K: new AO)
-        # Truncate C to only keep occupied columns
-        C = X @ C_p
-        C_docc = C[:, :ndocc]
-
-        # 2. Compute new Density matrix D
-        D = C_docc @ C_docc.T
+        D = solve_F_get_D(F, X, ndocc)
 
         # 3. Compute energy
         E0 = np.sum(D * (H + F)) + V_nn
@@ -96,10 +56,7 @@ def roothan_solver(mol: Molecule, S, T, V, I,
                 print("SCF Converged!")
                 print('Final RHF Energy: %.10f a.u.' % E0)
             
-            if basis is not None and return_mulliken:
-                return E0, calc_mulliken_charges(mol, basis, D, S)
-            
-            return E0
+            return E0, D
 
         E0_last = E0
 
@@ -113,25 +70,3 @@ def roothan_solver(mol: Molecule, S, T, V, I,
             
             # Extrapolate F
             F = np.einsum('i,ijk->jk', coeffs, np.array(F_list[history]))
-
-
-def calc_mulliken_charges(mol: Molecule, basis: Basis, D, S):
-    from scratch_code_fock.mol_basis_builder import ATOMIC_NUMBERS
-    P = 2.0 * (D @ S)
-
-    ao_populations = np.diag(P)
-
-    num_atoms = len(mol.atoms)
-    atom_electrons = np.zeros(num_atoms)
-
-    nbf = S.shape[0]
-    for ao_idx in range(nbf):
-        atom_center = basis.function_to_center(ao_idx)
-        atom_electrons[atom_center] += ao_populations[ao_idx]
-
-    mulliken_charges = np.zeros_like(atom_electrons)
-    for i in range(num_atoms):
-        Z = ATOMIC_NUMBERS[mol.atoms[i].upper()]
-        mulliken_charges[i] = Z - atom_electrons[i]
-
-    return mulliken_charges

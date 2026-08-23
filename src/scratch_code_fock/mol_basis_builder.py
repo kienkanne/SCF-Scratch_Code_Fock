@@ -82,26 +82,44 @@ class Molecule:
         lines = xyz_string.strip().split('\n')
         self.atoms = []
         self.coords = []
+        self.charge = None
+        self.multiplicity = None
         
         # Handle optional header lines in standard XYZ files
         start_idx = 0
-        if len(lines[0].split()) == 1: # First line is atom count
+        if len(lines) > 0 and len(lines[0].split()) == 1:  # First line is atom count
             start_idx = 2 if len(lines) > 1 else 1
+            
+            # Parse charge and multiplicity from the comment line (line 1)
+            if len(lines) > 1:
+                parts = lines[1].split()
+                if len(parts) >= 2:
+                    try:
+                        self.charge = int(parts[0])
+                        self.multiplicity = int(parts[1])
+                    except ValueError:
+                        pass
             
         for line in lines[start_idx:]:
             parts = line.split()
-            if not parts: continue
+            if not parts: 
+                continue
             self.atoms.append(parts[0])
             self.coords.append([float(x) for x in parts[1:4]])
         
         self.coords = np.array(self.coords)
 
-        n_electrons = sum(ATOMIC_NUMBERS[atom.upper()] for atom in self.atoms)
-        if n_electrons % 2 != 0:
-            raise ValueError("RHF requires a closed-shell molecule with an even electron count.")
-        self.ndocc = n_electrons // 2
+        self.n_electrons = sum(ATOMIC_NUMBERS[atom.upper()] for atom in self.atoms) + self.charge
 
-        # Optionally set all to be called upon initialization
+        self.n_unpaired = (self.multiplicity - 1) / 2
+        if (self.n_electrons - self.n_unpaired) % 2 != 0:
+            raise ValueError(f"Invalid charge and multiplicity. Molecule has {self.n_electrons} electrons and {self.multiplicity} multiplicity")
+
+        self.ndocc = (self.n_electrons - self.n_unpaired) // 2
+        self.n_alpha = self.ndocc + self.n_unpaired
+        self.n_beta = self.ndocc
+
+        # Set all to be called upon initialization
         self.V_nn = self.get_nuclear_repulsion()
 
 
